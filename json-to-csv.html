@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logs CSV</title>
+</head>
+
+<body>
+
+  <h1>Logs CSV</h1>
+
+  <input type="file" id="jsonFileInput">
+  <button id="loadButton">Carregar JSON</button>
+  <button id="convertButton" disabled>Converter para CSV e Baixar</button>
+
+  <script>
+    // Função para converter JSON para CSV
+    function jsonToCsv(jsonData) {
+      const separator = ","; // Delimitador do CSV (vírgula)
+      let csv = "";
+
+      // Cabeçalho do CSV
+      const headers = Object.keys(jsonData[0]);
+      csv += headers.join(separator) + "\n";
+
+      // Conteúdo do CSV
+      jsonData.forEach(item => {
+        const values = Object.values(item);
+        csv += values.join(separator) + "\n";
+      });
+
+      return csv;
+    }
+
+    // Função para ler o conteúdo do arquivo JSON selecionado
+    function readJsonFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+          try {
+            const jsonData = JSON.parse(event.target.result);
+            resolve(jsonData);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        reader.onerror = function (event) {
+          reject(new Error('Erro ao ler o arquivo JSON.'));
+        };
+
+        reader.readAsText(file);
+      });
+    }
+
+    // Função para manipular o clique do botão "Carregar JSON"
+    async function handleLoadClick() {
+      const fileInput = document.getElementById('jsonFileInput');
+      const file = fileInput.files[0];
+
+      if (file) {
+        try {
+          const jsonData = await readJsonFile(file);
+          // O arquivo JSON foi carregado com sucesso, agora vamos ativar o botão "Converter para CSV e Baixar"
+          document.getElementById('convertButton').disabled = false;
+          document.getElementById('convertButton').addEventListener('click', () => {
+            convertAndDownload(jsonData, file.name);
+          });
+          console.log('Arquivo JSON carregado com sucesso:', jsonData);
+        } catch (error) {
+          console.error('Erro ao carregar o arquivo JSON:', error);
+        }
+      } else {
+        console.error('Nenhum arquivo selecionado.');
+      }
+    }
+
+    // Função para converter para CSV e baixar o arquivo
+    function convertAndDownload(jsonData, fileName) {
+      const csvData = jsonToCsv(jsonData);
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName.replace('.json', '.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    // Adicionar o manipulador de evento ao botão "Carregar JSON"
+    document.getElementById('loadButton').addEventListener('click', handleLoadClick);
+  </script>
+</body>
+
+</html>
